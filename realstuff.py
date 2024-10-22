@@ -3,22 +3,22 @@ import mediapipe as mp
 import numpy as np
 import pickle
 
-# Load MediaPipe and drawing utilities
+# mediapipe 
 mp_hands = mp.solutions.hands
 mp_drawing = mp.solutions.drawing_utils
 mp_drawing_styles = mp.solutions.drawing_styles
 
-# Load trained model
+# load the file
 model_dict = pickle.load(open('./model.p', 'rb'))
 model = model_dict['model']
 
-# Set up webcam
+# opens webcam
 capture = cv.VideoCapture(0)
 
-# Initialize MediaPipe Hands
+# media pipe hand initialization
 hands = mp_hands.Hands(static_image_mode=False, max_num_hands=1, min_detection_confidence=0.5)
 
-# Labels dictionary
+# labels.. like handpipe says A its gonna say A
 labelDict = {
     'A':'A',
     'B':'B',
@@ -49,7 +49,7 @@ labelDict = {
 }
 
 while True:
-    dataAUX = []
+    dataAUX = [] #aux list
     x_ = []
     y_ = []
 
@@ -58,10 +58,10 @@ while True:
         print("Failed to grab frame")
         break
 
-    # Convert the frame to RGB
+    # coverts the frame from bgr to rgb so that mediapipe can initialize
     frameRGB = cv.cvtColor(frame, cv.COLOR_BGR2RGB)
 
-    # Process the frame for hand landmarks
+    # processed handland mark
     results = hands.process(frameRGB)
 
     if results.multi_hand_landmarks:
@@ -74,26 +74,26 @@ while True:
                 mp_drawing_styles.get_default_hand_connections_style()
             )
 
-            # Collect raw x and y values
+            # collect raw x and y values
             for landmark in hand_landmarks.landmark:
                 x_.append(landmark.x)
                 y_.append(landmark.y)
 
-            # Normalize and add to dataAUX (same as training)
+            # normalize and add to dataAUX (literally or idk really same as training)
             for landmark in hand_landmarks.landmark:
                 dataAUX.append(landmark.x - min(x_))
                 dataAUX.append(landmark.y - min(y_))
 
-        # Convert to numpy array and reshape if necessary
+        # convert to numpy array and reshape if necessary. reshape is done so that the x42 and x84 can coexist. you know the deal
         dataAUX = np.asarray(dataAUX).reshape(1, -1)
 
-        # Make a prediction
+        # the prediction... the main head
         prediction = model.predict(dataAUX)
 
-        # Get the predicted character from labelDict
+        # checks the predicted to the labels
         predicted_character = labelDict[prediction[0]]
 
-        # Draw bounding box and label around the hand
+        # the box around the hand
         H, W, _ = frame.shape
         x1 = int(min(x_) * W) - 10
         y1 = int(min(y_) * H) - 10
@@ -103,13 +103,13 @@ while True:
         cv.rectangle(frame, (x1, y1), (x2, y2), (0, 0, 0), 4)
         cv.putText(frame, predicted_character, (x1, y1 - 10), cv.FONT_HERSHEY_SIMPLEX, 1.3, (0, 0, 0), 3, cv.LINE_AA)
 
-    # Display the frame
+    # displays the frame
     cv.imshow('frame', frame)
 
-    # Break on 'q' key press
+    # if i wanna quit i can just press q
     if cv.waitKey(1) & 0xFF == ord('q'):
         break
 
-# Release webcam and close windows
+# cv2 stuff lol
 capture.release()
 cv.destroyAllWindows()
